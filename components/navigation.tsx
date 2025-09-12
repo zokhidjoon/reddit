@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useAuth } from "./auth-provider"
+import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -26,7 +26,7 @@ const navigation = [
 
 export function Navigation() {
   const pathname = usePathname()
-  const { session, loading, signOut } = useAuth()
+  const { data: session, status } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -34,7 +34,7 @@ export function Navigation() {
     setMounted(true)
   }, [])
 
-  if (!mounted || loading) {
+  if (!mounted || status === "loading") {
     return null
   }
 
@@ -143,7 +143,7 @@ export function Navigation() {
                   className="cursor-pointer"
                   onSelect={(event) => {
                     event.preventDefault()
-                    signOut()
+                    signOut({ callbackUrl: "/" })
                   }}
                 >
                   <LogOut className="mr-2 h-4 w-4" />

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { redirect } from "next/navigation"
-import { useAuth } from "@/components/auth-provider"
+import { useSession } from "next-auth/react"
 import { createClient } from "@/lib/supabase/client"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardOverview } from "@/components/dashboard-overview"
@@ -12,7 +12,7 @@ import { AICommentGenerator } from "@/components/ai-comment-generator"
 import { OpportunityAlerts } from "@/components/opportunity-alerts"
 
 export default function Dashboard() {
-  const { session, loading } = useAuth()
+  const { data: session, status } = useSession()
   const [redditAccount, setRedditAccount] = useState(null)
   const [mounted, setMounted] = useState(false)
   const supabase = createClient()
@@ -22,7 +22,7 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    if (!mounted || loading) return
+    if (!mounted || status === "loading") return
 
     if (!session?.user) {
       redirect("/auth/signin")
@@ -37,9 +37,9 @@ export default function Dashboard() {
 
       fetchRedditAccount()
     }
-  }, [session, loading, supabase, mounted])
+  }, [session, status, supabase, mounted])
 
-  if (!mounted || loading) {
+  if (!mounted || status === "loading") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
         <div className="text-center">

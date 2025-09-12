@@ -2,38 +2,32 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuth } from "@/components/auth-provider"
+import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 
 export default function SignIn() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const { session, loading, signInWithReddit } = useAuth()
+  const { data: session, status } = useSession()
 
   useEffect(() => {
-    if (!loading && session?.user) {
+    if (status !== "loading" && session?.user) {
       router.push("/dashboard")
     }
-  }, [session, loading, router])
+  }, [session, status, router])
 
   const handleRedditSignIn = async () => {
     setIsLoading(true)
-
     try {
-      const { error } = await signInWithReddit()
-      if (error) {
-        console.error("Sign in error:", error)
-        setIsLoading(false)
-      }
-      // Success will be handled by the auth state change listener
+      await signIn("reddit", { callbackUrl: "/dashboard" })
     } catch (error) {
       console.error("Sign in error:", error)
       setIsLoading(false)
     }
   }
 
-  if (loading) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50">
         <div className="text-center">
