@@ -1,13 +1,27 @@
-// app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth"
 import RedditProvider from "next-auth/providers/reddit"
 import type { NextAuthOptions } from "next-auth"
 
+const requiredEnvVars = {
+  NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+  REDDIT_CLIENT_ID: process.env.REDDIT_CLIENT_ID,
+  REDDIT_CLIENT_SECRET: process.env.REDDIT_CLIENT_SECRET,
+}
+
+const missingVars = Object.entries(requiredEnvVars)
+  .filter(([key, value]) => !value)
+  .map(([key]) => key)
+
+if (missingVars.length > 0) {
+  console.error(`[NextAuth] Missing environment variables: ${missingVars.join(", ")}`)
+  console.error(`[NextAuth] Please set these in your Project Settings (Gear icon → Environment Variables)`)
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
-    Reddit({
-      clientId: process.env.REDDIT_CLIENT_ID!,
-      clientSecret: process.env.REDDIT_CLIENT_SECRET!,
+    RedditProvider({
+      clientId: process.env.REDDIT_CLIENT_ID || "missing",
+      clientSecret: process.env.REDDIT_CLIENT_SECRET || "missing",
       authorization: {
         params: {
           scope: "identity read submit",
@@ -18,7 +32,6 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, account, profile }) {
-      // Store the access token and user information
       if (account) {
         token.accessToken = account.access_token
         token.refreshToken = account.refresh_token
@@ -31,7 +44,6 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      // Send properties to the client
       if (token.accessToken) {
         session.accessToken = token.accessToken as string
       }
@@ -60,24 +72,18 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "development-secret-change-in-production",
+  trustHost: true,
   debug: process.env.NODE_ENV === "development",
-  // Add these for better error handling
   logger: {
-    error(code, metadata) {
-      console.error("[NextAuth Error]", code, metadata)
+    error: (code, metadata) => {
+      console.error(`[NextAuth Error] ${code}:`, metadata)
     },
-    warn(code) {
-      console.warn("[NextAuth Warning]", code)
-    },
-    debug(code, metadata) {
-      if (process.env.NODE_ENV === "development") {
-        console.debug("[NextAuth Debug]", code, metadata)
-      }
+    warn: (code) => {
+      console.warn(`[NextAuth Warning] ${code}`)
     },
   },
 }
 
 const handler = NextAuth(authOptions)
-
 export { handler as GET, handler as POST }
